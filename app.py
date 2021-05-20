@@ -28,8 +28,8 @@ warnings.filterwarnings("ignore")
 ---------------------------------------------------------------------------- """
 cfg = dict()
 # When running in Pythonanywhere
-appDataPath = '/home/yangz/apps-food_mapping/data'
-assetsPath = '/home/yangz/apps-food_mapping/assets'
+appDataPath = '/home/foodmapping/mysite/data/'
+assetsPath = '/home/foodmapping/mysite/assets/'
 
 if os.path.isdir(appDataPath):
     cfg['app_data_dir'] = appDataPath
@@ -38,9 +38,9 @@ if os.path.isdir(appDataPath):
 
 # when running locally
 else:
-    cfg['app_data_dir'] = 'data'
-    cfg['assets dir'] = 'assets'
-    cfg['cache dir'] = 'tmp/cache'
+    cfg['app_data_dir'] = './data/'
+    cfg['assets dir'] = './assets/'
+    cfg['cache dir'] = './tmp/cache'
 
 cfg['topN'] = 50
 cfg['timeout'] = 5 * 60  # Used in flask_caching
@@ -102,7 +102,7 @@ Prepare Data
 
 def getBusStops():
     coll_name = 'appStopsLiverpool'
-    csv_file = 'data/' + coll_name + '.csv'
+    csv_file = cfg['app_data_dir'] + coll_name + '.csv'
     if os.path.isfile(csv_file):
         df = pd.read_csv(csv_file)
         if 'Unnamed: 0' in df:
@@ -120,7 +120,7 @@ def getBusStops():
 # ------------------------------------------------------
 def getStores():
     collName = 'appShopLatLong'
-    csvFile = 'data/' + collName + '.csv'
+    csvFile = cfg['app_data_dir'] + collName + '.csv'
     if os.path.isfile(csvFile):
         df = pd.read_csv(csvFile)
         if 'Unnamed: 0' in df:
@@ -129,7 +129,8 @@ def getStores():
         df = getCollection(collName)
         df.to_csv(csvFile)
 
-    df['LSOA'].fillna('Out of Range', inplace=True)
+    #df['LSOA'].fillna('Out of Range', inplace=True)
+    df.drop(['place_id', 'Open_weekday'], axis = 1, inplace = True)
     df.rename(columns={'Shop Name': 'Info'}, inplace=True)
     if isinstance(df.loc[0, 'Hours'][0], str):
         f = lambda x: np.array(ast.literal_eval(x))
@@ -161,7 +162,7 @@ def getStores():
 # -----------------------------------------------------
 def getLSOA(df_stores):
     collName = 'appLSOA'
-    csvFile = 'data/' + collName + '.csv'
+    csvFile = cfg['app_data_dir'] + collName + '.csv'
     if os.path.isfile(csvFile):
         df = pd.read_csv(csvFile)
         if 'Unnamed: 0' in df:
@@ -182,7 +183,7 @@ def getLSOA(df_stores):
     keepCols = ['Store Type', 'Info', 'LSOA', 'Healthfulness', 'Hours']
     df_stores_sandbox = df_stores[keepCols].copy()
     df_stores_sandbox.drop(df_stores_sandbox[df_stores_sandbox['LSOA'] == 'Out of Range'].index, inplace = True)
-    df_stores_sandbox['Weekly Hours'] = [df_stores_sandbox['Hours'][idx].sum() for idx in df_stores_sandbox.index]
+    df_stores_sandbox['Weekly Hours'] = [np.sum(df_stores_sandbox['Hours'][idx]) for idx in df_stores_sandbox.index]
     df_stores_sandbox.drop(columns=['Hours'], axis = 0, inplace = True)
     df_stores_sandbox = df_stores_sandbox.merge(df[['LSOA', 'Vehicle Accessibility', 'IMDDecile', 'IMDRank']], how = 'left', on = 'LSOA')
 
@@ -821,7 +822,7 @@ def update_lsoa_dropdown(clickData,  selectedData, bus_store, lsoa,
 Analysis Tabs
 ------------------------------------------------------------------------------------------------- '''
 
-@cache.memoize(timeout=cfg['timeout'])
+#@cache.memoize(timeout=cfg['timeout'])
 def create_analysis_data(lsoa_selected):
     # f_lsoa_selected, df_stores_selected = reate_analysis_data(lsoa_selected)
     df_lsoa_selected = df_LSOA.iloc[np.isin(df_LSOA['LSOA'], lsoa_selected), 0:-1].copy()
@@ -1213,7 +1214,7 @@ if __name__ == "__main__":
     logging.info(sys.version)
 
     # If running locally in Anaconda env:
-    app.run_server(debug=False)
+    app.run_server(debug=True)
     # app.run_server()
 
     # If running on AWS/Pythonanywhere production

@@ -5,7 +5,7 @@ logs/*
 venv/*
 tmp/cache/*
 sandbox.py
-
+assets/googlemap_key.txt
 
 !data/.gitkeep
 !assets/.gitkeep
